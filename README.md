@@ -1,6 +1,7 @@
-# Indoor-Routing (need to update this readme)
-This javascript gives routes, using a set of markers (to create a graph), placed using geojson data, for one section of Hartsfield–Jackson Atlanta International Airport
-The script has 43 markers placed around the map and a graph is constructed using these markers:
+# Indoor-Routing
+This project gives routes, using a set of markers created using geojson data, for one section of Hartsfield–Jackson Atlanta International Airport.
+
+The project has 43 markers placed around the map and a graph is constructed using these markers:
 ```javascript
 var graph = new DirectedGraph();
 graph.addVertex('i', {'j': weight(data.features[i].geometry["coordinates"], data.features[j].geometry["coordinates"]),..});
@@ -20,13 +21,14 @@ The coordinates are retrived from the GeoJson data, which is of the format
   }
 }
 ```
-To construct this, we use Google's Simple GeoJSON Editor https://google-developers.appspot.com/maps/documentation/utils/geojson/ which allows us to drag and drop markers for which the GeoJson is constructed.
+To get the GeoJSON data, I used Google's Simple GeoJSON Editor https://google-developers.appspot.com/maps/documentation/utils/geojson/ which allows us to drag and drop markers for which the GeoJson is constructed.
 
 The endpoint is then collected from the user by the use of a prompt
 ```javascript
 var end_point = prompt("Please enter the end point(between 1-43):");
 ```
-This variable is then passed shortest path finding function which then calculates all the intermediate vertices to be traversed using Dijkstra's Shortest Path Algorithm which creates a tree of shortest paths from the starting vertex, the source, to all other points in the graph.
+This value is then passec to the shortest path finding function which calculates all the intermediate vertices to be traversed using Dijkstra's Shortest Path Algorithm.
+
 The pseudocode for Dijkstra's algorithm is given below.
 ```javascript
 function Dijkstra(Graph, source):
@@ -48,53 +50,56 @@ function Dijkstra(Graph, source):
       return dist[]
   end function
 ```
-In order to calculate the shortest distance between the vertices, since this is a weighted graph, we make use of the **haversine formula** which determines the great-circle distance between two points on a sphere given their longitudes and latitudes.
+In order to calculate the shortest distance between the vertices, since this is a weighted graph, I made use of the **haversine formula** which determines the great-circle distance between two points on a sphere given their longitudes and latitudes.
 ```javascript
-function weight(a, b){
-                        var R = 6371; // Radius of the earth in km
-                        var dLat = deg2rad(b[1] - a[1]); // deg2rad below
-                        var dLon = deg2rad(b[0] - a[0]);
-                        var temp =
-                            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                            Math.cos(deg2rad(a[1])) * Math.cos(deg2rad(b[1])) *
-                            Math.sin(dLon / 2) * Math.sin(dLon / 2);
-                        var c = 2 * Math.atan2(Math.sqrt(temp), Math.sqrt(1 - temp));
-                        var d = R * c; // Distance in km
-                        return d;
-                      }
+function weight(a, b) {
+  var R = 6371; // Radius of the earth in km
+  var dLat = deg2rad(b[1] - a[1]); // deg2rad below
+  var dLon = deg2rad(b[0] - a[0]);
+  var temp = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+             Math.cos(deg2rad(a[1])) * Math.cos(deg2rad(b[1])) *
+             Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  var c = 2 * Math.atan2(Math.sqrt(temp), Math.sqrt(1 - temp));
+  var d = R * c; // Distance in km
+  return d;
+}
                       
-function deg2rad(deg){
-                        return deg * (Math.PI / 180)
-                     }
+function deg2rad(deg) {
+  return deg * (Math.PI / 180);
+}
 ```
 To plot the route between the markers, we retrieve the shortest path and store it in another variable
 ```javascript
- var x_path = [];
-                    for (i = 0; i < data.features.length; i++) {
-                        for (j = 0; j < out.shortestPaths[end_point].length; j++) {
-                            if (String(i) == out.shortestPaths[end_point][j]) {
-                                var x_i = i
-                                x_path.push({
-                                    lat: data.features[x_i].geometry.coordinates[1],
-                                    lng: data.features[x_i].geometry.coordinates[0]
-                                })
-                            }
-                        }
-                    }
-                    x_path.push({
-                        lat: data.features[end_point].geometry.coordinates[1],
-                        lng: data.features[end_point].geometry.coordinates[0]
-                    })
+var x_path = [];
+
+for (i = 0; i < data.features.length; i++) {
+	for (j = 0; j < out.shortestPaths[end_point].length; j++) {
+		if (String(i) == out.shortestPaths[end_point][j]) {
+			var x_i = i;
+			x_path.push({
+				lat: data.features[x_i].geometry.coordinates[1],
+				lng: data.features[x_i].geometry.coordinates[0]
+			});
+		}
+	}
+}
+x_path.push({
+	lat: data.features[end_point].geometry.coordinates[1],
+	lng: data.features[end_point].geometry.coordinates[0]
+});
+
+return x_path;
+
 ```
 We then plot it using:
 ```javascript
 var Path = new google.maps.Polyline({
-                            path: x_path,
-                            geodesic: true,
-                            strokeColor: '#FF0000',
-                            strokeOpacity: 1.0,
-                            strokeWeight: 2
-                        });
+            path: x_path,
+            geodesic: true,
+            strokeColor: '#FF0000',
+            strokeOpacity: 1.0,
+            strokeWeight: 2
+          });
 ```
 The resulting map using an example input of 13 is
 ![](output.png "Given input: 13")
